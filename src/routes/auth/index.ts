@@ -1,4 +1,5 @@
-import Elysia, { error } from "elysia";
+import Elysia from "elysia";
+import { error as elysiaError } from "elysia";
 import { Auth } from "../../utils/auth";
 import {
   loginModel,
@@ -8,9 +9,18 @@ import {
 } from "./models";
 import jwt from "@elysiajs/jwt";
 import { User } from "../../utils/user";
-import { password } from "bun";
-import { rateLimit } from "elysia-rate-limit";
+import { hash } from "@node-rs/bcrypt"; // Using bcrypt instead of bun's password
+import { rateLimit } from "@elysiajs/rate-limit"; // Using official Elysia rate limit plugin
 import { keyGenerator } from "../../utils/generator";
+
+// Define types for the context
+type JwtContext = {
+  jwt: ReturnType<typeof jwt>;
+};
+
+type RequestContext = {
+  body: any;
+};
 
 export const authentication = new Elysia({ prefix: "/authentication" })
   .use(
@@ -28,7 +38,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
   )
   .post(
     "/login-otp",
-    async ({ body, jwt }) => {
+    async ({ body, jwt }: RequestContext & JwtContext) => {
       const { email, otp } = body;
 
       const auth = new Auth();
@@ -36,7 +46,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
 
       switch(result.status){
         case 400:
-          return error(result.status, result.message)
+          return elysiaError(result.status, result.message)
           break;
           
         case 200:
@@ -45,7 +55,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
           break;
           
         default:
-          return error(500, "Internal Server Error");
+          return elysiaError(500, "Internal Server Error");
       }
     },
     {
@@ -58,7 +68,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
 
   .post(
     "/login",
-    async ({ body, jwt }) => {
+    async ({ body, jwt }: RequestContext & JwtContext) => {
       const { email, password } = body;
 
       const auth = new Auth();
@@ -66,7 +76,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
       
       switch(result.status){
         case 400:
-          return error(result.status, result.message)
+          return elysiaError(result.status, result.message)
           break;
           
         case 200:
@@ -75,7 +85,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
           break;
           
         default:
-          return error(500, "Internal Server Error");
+          return elysiaError(500, "Internal Server Error");
       }
 
     },
@@ -89,7 +99,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
 
   .post(
     "/register",
-    async ({ body }) => {
+    async ({ body }: RequestContext) => {
       const { firstName, lastName, phoneNumber, email, photoUrl, password } =
         body;
 
@@ -106,7 +116,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
 
       switch(result.status){
         case 400:
-          return error(result.status, result.message)
+          return elysiaError(result.status, result.message)
           break;
           
         case 200:
@@ -114,7 +124,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
           break;
           
         default:
-          return error(500, "Internal Server Error");
+          return elysiaError(500, "Internal Server Error");
       }
     },
     {
@@ -127,7 +137,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
 
   .post(
     "/register-otp",
-    async ({ body }) => {
+    async ({ body }: RequestContext) => {
       const { firstName, lastName, phoneNumber, email, photoUrl } = body;
 
       const userObj = new User();
@@ -142,7 +152,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
 
       switch(result.status){
         case 400:
-          return error(result.status, result.message)
+          return elysiaError(result.status, result.message)
           break;
           
         case 200:
@@ -150,7 +160,7 @@ export const authentication = new Elysia({ prefix: "/authentication" })
           break;
           
         default:
-          return error(500, "Internal Server Error");
+          return elysiaError(500, "Internal Server Error");
       }
     },
     {
